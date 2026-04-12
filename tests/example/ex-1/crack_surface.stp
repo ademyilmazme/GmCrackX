@@ -1,0 +1,131 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('Crack surface planar geometry for GmCrackX'),'2;1');
+FILE_NAME('crack_surface.stp','2026-04-02',('GmCrackX'),(''),'OpenCASCADE','','');
+FILE_SCHEMA(('AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'));
+ENDSEC;
+DATA;
+
+/* ------------------------------------------------------------------ */
+/* Application context                                                  */
+/* ------------------------------------------------------------------ */
+#1=APPLICATION_PROTOCOL_DEFINITION('international standard',
+   'automotive_design',2000,#2);
+#2=APPLICATION_CONTEXT('automotive_design');
+#3=PRODUCT_CONTEXT('',#2,'mechanical');
+
+/* ------------------------------------------------------------------ */
+/* Product / definition                                                 */
+/* ------------------------------------------------------------------ */
+#4=PRODUCT('crack_surface','Crack Surface Geometry','',(#3));
+#5=PRODUCT_DEFINITION_FORMATION_WITH_SPECIFIED_SOURCE('','',#4,.NOT_KNOWN.);
+#6=PRODUCT_DEFINITION_CONTEXT('part definition',#2,'design');
+#7=PRODUCT_DEFINITION('','',#5,#6);
+#8=PRODUCT_DEFINITION_SHAPE('','',#7);
+
+/* ------------------------------------------------------------------ */
+/* Representation context — metres, radians                             */
+/* ------------------------------------------------------------------ */
+#10=(
+  GEOMETRIC_REPRESENTATION_CONTEXT(3)
+  GLOBAL_UNCERTAINTY_ASSIGNED_CONTEXT((#11))
+  GLOBAL_UNIT_ASSIGNED_CONTEXT((#12,#13,#14))
+  REPRESENTATION_CONTEXT('Context #1','3D Context with UNIT and UNCERTAINTY')
+);
+#11=UNCERTAINTY_MEASURE_WITH_UNIT(LENGTH_MEASURE(1.E-07),#12,
+   'distance_accuracy_value','confusion accuracy');
+#12=(LENGTH_UNIT() NAMED_UNIT(*) SI_UNIT(.MILLI.,.METRE.));
+#13=(NAMED_UNIT(*) PLANE_ANGLE_UNIT() SI_UNIT($,.RADIAN.));
+#14=(NAMED_UNIT(*) SI_UNIT($,.STERADIAN.) SOLID_ANGLE_UNIT());
+
+/* ------------------------------------------------------------------ */
+/* Corner points                                                        */
+/*   Rectangle at z=2.0 :                                              */
+/*     P1 (-0.2, -0.1, 2.0)  bottom-left                               */
+/*     P2 ( 1.2, -0.1, 2.0)  bottom-right                              */
+/*     P3 ( 1.2,  0.2, 2.0)  top-right                                 */
+/*     P4 (-0.2,  0.2, 2.0)  top-left                                  */
+/* ------------------------------------------------------------------ */
+#20=CARTESIAN_POINT('P1',(-.2,-.1,2.));
+#21=CARTESIAN_POINT('P2',(1.2,-.1,2.));
+#22=CARTESIAN_POINT('P3',(1.2,.2,2.));
+#23=CARTESIAN_POINT('P4',(-.2,.2,2.));
+
+/* ------------------------------------------------------------------ */
+/* Vertices                                                             */
+/* ------------------------------------------------------------------ */
+#30=VERTEX_POINT('V1',#20);
+#31=VERTEX_POINT('V2',#21);
+#32=VERTEX_POINT('V3',#22);
+#33=VERTEX_POINT('V4',#23);
+
+/* ------------------------------------------------------------------ */
+/* Edge directions and vectors                                          */
+/* ------------------------------------------------------------------ */
+#40=DIRECTION('',( 1.,0.,0.));   /* +X (bottom edge, length 1.4) */
+#41=DIRECTION('',( 0.,1.,0.));   /* +Y (right  edge, length 0.3) */
+#42=DIRECTION('',(-1.,0.,0.));   /* -X (top    edge, length 1.4) */
+#43=DIRECTION('',( 0.,-1.,0.)); /* -Y (left   edge, length 0.3) */
+
+#44=VECTOR('bottom',#40,1.4);
+#45=VECTOR('right', #41,0.3);
+#46=VECTOR('top',   #42,1.4);
+#47=VECTOR('left',  #43,0.3);
+
+/* ------------------------------------------------------------------ */
+/* Lines                                                                */
+/* ------------------------------------------------------------------ */
+#50=LINE('bottom',#20,#44);
+#51=LINE('right', #21,#45);
+#52=LINE('top',   #22,#46);
+#53=LINE('left',  #23,#47);
+
+/* ------------------------------------------------------------------ */
+/* Edge curves                                                          */
+/* ------------------------------------------------------------------ */
+#60=EDGE_CURVE('bottom',#30,#31,#50,.T.);
+#61=EDGE_CURVE('right', #31,#32,#51,.T.);
+#62=EDGE_CURVE('top',   #32,#33,#52,.T.);
+#63=EDGE_CURVE('left',  #33,#30,#53,.T.);
+
+/* ------------------------------------------------------------------ */
+/* Oriented edges (CCW winding when viewed from +Z)                     */
+/* ------------------------------------------------------------------ */
+#70=ORIENTED_EDGE('',*,*,#60,.T.);
+#71=ORIENTED_EDGE('',*,*,#61,.T.);
+#72=ORIENTED_EDGE('',*,*,#62,.T.);
+#73=ORIENTED_EDGE('',*,*,#63,.T.);
+
+/* ------------------------------------------------------------------ */
+/* Edge loop → outer bound → plane → face                              */
+/* ------------------------------------------------------------------ */
+#80=EDGE_LOOP('',(#70,#71,#72,#73));
+#81=FACE_OUTER_BOUND('',#80,.T.);
+
+/* Plane: origin at P1, normal = +Z, ref direction = +X */
+#90=CARTESIAN_POINT('',(-0.2,-0.1,2.));
+#91=DIRECTION('',( 0.,0.,1.));   /* plane normal */
+#92=DIRECTION('',( 1.,0.,0.));   /* ref direction */
+#93=AXIS2_PLACEMENT_3D('',#90,#91,#92);
+#94=PLANE('crack_plane',#93);
+
+#100=ADVANCED_FACE('crack_face',(#81),#94,.T.);
+
+/* ------------------------------------------------------------------ */
+/* Shell and shape model                                                */
+/* ------------------------------------------------------------------ */
+#110=OPEN_SHELL('crack_shell',(#100));
+#111=SHELL_BASED_SURFACE_MODEL('crack_surface',(#110));
+
+/* ------------------------------------------------------------------ */
+/* Shape representation                                                 */
+/* ------------------------------------------------------------------ */
+#120=MANIFOLD_SURFACE_SHAPE_REPRESENTATION('',(#111),#10);
+
+/* ------------------------------------------------------------------ */
+/* Link shape to product                                                */
+/* ------------------------------------------------------------------ */
+#130=SHAPE_DEFINITION_REPRESENTATION(#8,#120);
+
+ENDSEC;
+END-ISO-10303-21;

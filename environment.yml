@@ -1,0 +1,14 @@
+name: gmcrackx
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - pyqt6
+  - vtk
+  - pyvista
+  - pip
+  - pip:
+    - pytest

@@ -1,0 +1,42 @@
+# Large binary / solver directory
+CalculixSolver/
+
+# ANSYS RST binary result files (large, not version-controlled)
+tests/example/ex-2/file.rst
+tests/example/ex-3/file_linear.rst
+
+# Generated FRD output files in test examples (reproducible from RST)
+tests/example/ex-2/file.frd
+tests/example/ex-3/file_linear.frd
+
+# Solver output / working directories
+tests/example/*/prop_work/
+
+# Claude Code session / memory files (local only)
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db

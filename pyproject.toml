@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "gmcrackx"
+version = "0.2.0"
+description = "CalculiX *CRACK PROPAGATION frontend: prepare, run, read, visualize"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy",
+    "scipy",
+]
+
+[project.optional-dependencies]
+brep = ["pythonocc-core"]
+viz  = ["pyvista", "vtk"]
+ui   = ["PyQt6>=6.6"]
+full = ["pythonocc-core", "pyvista", "vtk", "PyQt6>=6.6"]
+test = ["pytest"]
+
+[project.scripts]
+gmcrackx = "main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ui*", "core*", "solver*", "pipeline*", "crack_io*"]
