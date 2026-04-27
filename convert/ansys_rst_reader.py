@@ -33,6 +33,7 @@ import numpy as np
 
 from .base_reader import BaseResultReader
 from .neutral_model import (
+    ComponentSet,
     NeutralElement,
     NeutralElementType,
     NeutralIncrement,
@@ -212,6 +213,16 @@ class AnsysRstReader(BaseResultReader):
             info.setdefault("ansys_element_types", {})
             info.setdefault("n_supported_elements", 0)
             info.setdefault("unsupported_element_types", [])
+
+        # Named element components (named selections stored in the RST file)
+        try:
+            elem_comps = getattr(rst.mesh, "element_components", None) or {}
+            info["components"] = {
+                str(name): {"n_elements": int(len(eids))}
+                for name, eids in elem_comps.items()
+            }
+        except Exception:
+            info["components"] = {}
 
         fields: list[str] = []
         try:
@@ -404,6 +415,17 @@ class AnsysRstReader(BaseResultReader):
                 node_ids=nids,
             )
             n_supported += 1
+
+        # -- Named element components (named selections) --
+        try:
+            elem_comps = getattr(mesh, "element_components", None) or {}
+            for comp_name, eids in elem_comps.items():
+                model.components[str(comp_name)] = ComponentSet(
+                    name=str(comp_name),
+                    element_ids=frozenset(int(e) for e in eids),
+                )
+        except Exception:
+            pass  # components are optional — never fatal
 
         # -- Validation: must have at least one supported element --
         if n_supported == 0:

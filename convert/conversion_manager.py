@@ -111,6 +111,7 @@ class ConversionManager:
         fields: list[str] | None = None,
         increments: list[int] | None = None,
         validate: bool = True,
+        component_names: list[str] | None = None,
     ) -> list[str]:
         """Convert *source* to a CalculiX FRD file at *dest*.
 
@@ -127,6 +128,9 @@ class ConversionManager:
         validate:
             If *True* (default), run :meth:`NeutralModel.validate` before
             writing and return issues as a non-empty list on failure.
+        component_names:
+            If given, restrict the export to elements belonging to the named
+            components (named selections).  ``None`` = full model.
 
         Returns
         -------
@@ -138,6 +142,9 @@ class ConversionManager:
             return [f"No reader found for: {source}"]
 
         model: NeutralModel = reader.read(source, fields=fields, increments=increments)
+
+        if component_names:
+            model = model.subset(component_names)
 
         if validate:
             issues = model.validate()

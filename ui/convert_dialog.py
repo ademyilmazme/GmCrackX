@@ -3,8 +3,10 @@ Result conversion dialog — Tools tab → Convert Results.
 
 Workflow:
   1. User browses for a source file.
-  2. The dialog inspects the file and lists available fields / increments.
-  3. User picks which fields / increments to include and sets an output path.
+  2. The dialog inspects the file and lists available fields / increments /
+     named components.
+  3. User picks which fields / increments to include, sets an export scope
+     (all model or selected components), and sets an output path.
   4. Clicking Convert runs the conversion in a background Worker thread.
   5. On success a summary label shows; on error the message is displayed.
 """
@@ -14,6 +16,7 @@ from pathlib import Path
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
+    QButtonGroup,
     QCheckBox,
     QDialog,
     QDialogButtonBox,
@@ -28,6 +31,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QRadioButton,
     QVBoxLayout,
 )
 
@@ -101,6 +105,44 @@ class ConvertDialog(QDialog):
         inc_layout.addWidget(self._incs_list)
         root.addWidget(inc_grp)
 
+        # --- Export scope ---
+        scope_grp = QGroupBox("Export Scope")
+        scope_layout = QVBoxLayout(scope_grp)
+
+        self._scope_btn_grp = QButtonGroup(self)
+        self._scope_all_rb = QRadioButton("All model")
+        self._scope_all_rb.setChecked(True)
+        self._scope_comp_rb = QRadioButton("Selected components")
+        self._scope_btn_grp.addButton(self._scope_all_rb)
+        self._scope_btn_grp.addButton(self._scope_comp_rb)
+
+        rb_row = QHBoxLayout()
+        rb_row.addWidget(self._scope_all_rb)
+        rb_row.addWidget(self._scope_comp_rb)
+        rb_row.addStretch()
+        scope_layout.addLayout(rb_row)
+
+        self._comp_list = QListWidget()
+        self._comp_list.setSelectionMode(
+            QListWidget.SelectionMode.MultiSelection
+        )
+        self._comp_list.setFixedHeight(110)
+        self._comp_list.setEnabled(False)
+        self._comp_list.setToolTip(
+            "Select one or more named components to restrict the export."
+        )
+        scope_layout.addWidget(self._comp_list)
+
+        self._comp_hint = QLabel("No components defined in this file.")
+        self._comp_hint.setStyleSheet("color: gray; font-size: 11px;")
+        self._comp_hint.setVisible(False)
+        scope_layout.addWidget(self._comp_hint)
+
+        root.addWidget(scope_grp)
+
+        # Wire scope radio buttons
+        self._scope_all_rb.toggled.connect(self._on_scope_toggled)
+
         # --- Output file ---
         out_grp = QGroupBox("Output FRD File")
         out_layout = QHBoxLayout(out_grp)
@@ -155,7 +197,7 @@ class ConvertDialog(QDialog):
         self._inspect_source(path)
 
     def _inspect_source(self, path: str) -> None:
-        """Run lightweight inspection and populate field/increment lists."""
+        """Run lightweight inspection and populate field/increment/component lists."""
         mgr = self._get_manager()
         if mgr is None:
             return
@@ -187,7 +229,37 @@ class ConvertDialog(QDialog):
             for i in range(n):
                 self._incs_list.addItem(QListWidgetItem(f"Increment {i + 1}"))
 
+        # Populate component list
+        self._populate_components(self._info.get("components", {}))
+
         self._convert_btn.setEnabled(True)
+
+    def _populate_components(self, components: dict) -> None:
+        """Fill the component list widget from inspection metadata.
+
+        Parameters
+        ----------
+        components:
+            Dict of ``{name: {"n_elements": int}}`` from the inspect call.
+        """
+        self._comp_list.clear()
+
+        if not components:
+            self._scope_comp_rb.setEnabled(False)
+            self._comp_list.setVisible(False)
+            self._comp_hint.setVisible(True)
+            return
+
+        self._scope_comp_rb.setEnabled(True)
+        self._comp_list.setVisible(True)
+        self._comp_hint.setVisible(False)
+
+        for comp_name, meta in sorted(components.items()):
+            n_elems = meta.get("n_elements", "?")
+            item = QListWidgetItem(f"{comp_name}  ({n_elems} elements)")
+            # Store the raw component name for retrieval
+            item.setData(Qt.ItemDataRole.UserRole, comp_name)
+            self._comp_list.addItem(item)
 
     def _browse_output(self) -> None:
         path, _ = QFileDialog.getSaveFileName(
@@ -201,6 +273,12 @@ class ConvertDialog(QDialog):
 
     def _on_all_incs_toggled(self, checked: bool) -> None:
         self._incs_list.setEnabled(not checked)
+
+    def _on_scope_toggled(self, all_model: bool) -> None:
+        """Enable/disable component list based on scope radio selection."""
+        use_comps = not all_model
+        has_comps = self._comp_list.count() > 0
+        self._comp_list.setEnabled(use_comps and has_comps)
 
     def _run_convert(self) -> None:
         source = self._src_edit.text().strip()
@@ -222,6 +300,21 @@ class ConvertDialog(QDialog):
             selected = self._incs_list.selectedItems()
             increments = [self._incs_list.row(it) for it in selected]
 
+        # Collect component names (None = all model)
+        component_names: list[str] | None = None
+        if self._scope_comp_rb.isChecked():
+            component_names = [
+                it.data(Qt.ItemDataRole.UserRole)
+                for it in self._comp_list.selectedItems()
+            ]
+            if not component_names:
+                QMessageBox.warning(
+                    self, "Convert",
+                    "Please select at least one component, or switch to "
+                    "\"All model\" to export the full mesh."
+                )
+                return
+
         self._set_busy(True)
         self._status_label.setText("Converting…")
 
@@ -234,6 +327,7 @@ class ConvertDialog(QDialog):
                 fields=fields if fields else None,
                 increments=increments,
                 validate=True,
+                component_names=component_names,
             )
             progress_cb(100, "Done")
             return issues
