@@ -14,6 +14,14 @@ length — in an interactive 3-D viewer.
 > and it does **not** re-implement fracture mechanics. CalculiX owns all the
 > physics; GmCrackX owns model preparation, orchestration and post-processing.
 
+![GmCrackX main window — model tree, 3-D viewer, crack-length graph and increment table](ui.PNG)
+
+<sub>A completed 27-increment run: the model tree carries the loaded FRD, mesh,
+S3 crack surface and per-step results (crack length *a* and cycles *N*); the
+viewer shows the crack surface embedded in the volume mesh; below it are the
+*a*-vs-*N* curve and the per-increment table of ΔK<sub>eq</sub>, K<sub>1</sub>/K<sub>2</sub>/K<sub>3</sub>,
+φ and da/dN.</sub>
+
 ---
 
 ## Table of contents
